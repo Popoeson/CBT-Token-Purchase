@@ -75,6 +75,47 @@ app.get('/api/payment/verify/:reference', async (req, res) => {
   }
 });
 
+const Token = require('./models/Token'); 
+
+app.get('/api/payment/verify/:reference', async (req, res) => {
+  const { reference } = req.params;
+
+  try {
+    const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+      headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
+    });
+
+    const status = response.data.data.status;
+
+    // Update transaction
+    const transaction = await Transaction.findOneAndUpdate({ reference }, { status }, { new: true });
+
+    if (status === 'success') {
+      // Generate unique token
+      const tokenCode = 'CBT-' + Math.floor(100000 + Math.random() * 900000);
+
+      // Save to DB
+      const newToken = new Token({
+        token: tokenCode,
+        reference: reference,
+        createdAt: new Date()
+      });
+      await newToken.save();
+
+      return res.json({
+        message: 'Payment verified and token issued',
+        token: tokenCode,
+        transaction
+      });
+    } else {
+      return res.status(400).json({ message: 'Payment not successful', status });
+    }
+  } catch (error) {
+    console.error("Verify error:", error.message);
+    return res.status(500).json({ error: 'Payment verification failed' });
+  }
+});
+
 app.get('/', (req, res) => {
   res.send("CBT Token Payment API is running");
 });
