@@ -25,7 +25,6 @@ const transactionSchema = new mongoose.Schema({
 const Transaction = mongoose.model('Transaction', transactionSchema);
 
 // models/Token.js
-const mongoose = require('mongoose');
 const tokenSchema = new mongoose.Schema({
   token: String,
   reference: String,
