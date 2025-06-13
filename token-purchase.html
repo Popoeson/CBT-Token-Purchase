@@ -112,18 +112,20 @@
       amount: 200000, // ₦2000 in Kobo
       currency: "NGN",
       ref: "CBT_" + Math.floor(Math.random() * 1000000000 + 1),
+      
       callback: function(response) {
-  fetch("https://cbt-token-purchase.onrender.com/api/payment/verify/" + response.reference)
-    .then(res => res.json())
-    .then(data => {
-      if (data.token) {
-        localStorage.setItem("myToken", data.token);
-        window.location.href = "success.html?reference=" + response.reference; // ✅ Redirect to success page
-      } else {
-        alert(data.message || "Verification failed.");
-      }
-    });
-  }
+        fetch("https://cbt-token-purchase.onrender.com/api/payment/verify/" + response.reference)
+          .then(res => res.json())
+          .then(data => {
+            if (data.token) {
+              localStorage.setItem("myToken", data.token);
+              window.location.href = "success.html?reference=" + response.reference; // ✅ Redirect to success page
+            } else {
+              alert(data.message || "Verification failed.");
+            }
+          });
+      },
+
       onClose: function() {
         alert("Payment window closed.");
       }
