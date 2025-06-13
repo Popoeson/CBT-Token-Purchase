@@ -24,14 +24,25 @@ const transactionSchema = new mongoose.Schema({
 
 const Transaction = mongoose.model('Transaction', transactionSchema);
 
-// models/Token.js
+// Token Schema
 const tokenSchema = new mongoose.Schema({
-  token: String,
+  studentName: String,
+  studentEmail: String,
+  amount: Number,
   reference: String,
-  createdAt: { type: Date, default: Date.now }
+  status: {
+    type: String,
+    enum: ['pending', 'success', 'failed'],
+    default: 'pending',
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
-module.exports = mongoose.model('Token', tokenSchema);
-  
+
+const Token = mongoose.model('Token', tokenSchema);
+
 // Connect to MongoDB
 mongoose.connect(MONGO_URI, {
   useNewUrlParser: true,
@@ -83,7 +94,6 @@ app.get('/api/payment/verify/:reference', async (req, res) => {
   }
 });
 
-const Token = require('./models/Token'); 
 
 app.get('/api/payment/verify/:reference', async (req, res) => {
   const { reference } = req.params;
