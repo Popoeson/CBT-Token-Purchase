@@ -95,48 +95,34 @@
     <button onclick="payWithPaystack()">Buy Token (₦2000)</button>
     <p class="note">Your token will be saved in your browser.</p>
   </div>
-
-  <script src="https://js.paystack.co/v1/inline.js"></script>
-  <script>
-    function payWithPaystack() {
-      const email = document.getElementById("email").value.trim();
-      if (!email) {
-        alert("Please enter your email.");
-        return;
-      }
-
-      localStorage.setItem("studentEmail", email);
-
-      const handler = PaystackPop.setup({
-        key: 'pk_test_72e7641a30dcdbad32a51606354065cc5b62f20f', // ✅ Replace with your actual PUBLIC key
-        email: email,
-        amount: 200000, // ₦2000 in Kobo
-        currency: "NGN",
-        ref: "CBT_" + Math.floor(Math.random() * 1000000000 + 1),
-        callback: function(response) {
-          fetch("https://cbt-token-purchase.onrender.com/api/payment/verify", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ reference: response.reference, email })
-          })
-          .then(res => res.json())
-          .then(data => {
-            if (data.token) {
-              localStorage.setItem("myToken", data.token);
-              alert("Token Purchased! Token: " + data.token);
-            } else {
-              alert(data.message || "Verification failed.");
-            }
-          });
-        },
-        onClose: function() {
-          alert("Payment window closed.");
-        }
-      });
-
-      handler.openIframe();
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script>
+  function payWithPaystack() {
+    const email = document.getElementById("email").value.trim();
+    if (!email) {
+      alert("Please enter your email.");
+      return;
     }
-  </script>
 
+    localStorage.setItem("studentEmail", email);
+
+    const handler = PaystackPop.setup({
+      key: 'pk_test_72e7641a30dcdbad32a51606354065cc5b62f20f',
+      email: email,
+      amount: 200000, // ₦2000 in Kobo
+      currency: "NGN",
+      ref: "CBT_" + Math.floor(Math.random() * 1000000000 + 1),
+      callback: function(response) {
+        // ✅ Redirect to success page with reference
+        window.location.href = `success.html?reference=${response.reference}`;
+      },
+      onClose: function() {
+        alert("Payment window closed.");
+      }
+    });
+
+    handler.openIframe();
+  }
+</script>
 </body>
 </html>
