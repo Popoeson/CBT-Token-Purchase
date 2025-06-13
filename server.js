@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -8,6 +9,9 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve static frontend files
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Environment Variables
 const PORT = process.env.PORT || 5000;
@@ -50,7 +54,7 @@ app.post('/api/payment/initialize', async (req, res) => {
       'https://api.paystack.co/transaction/initialize',
       {
         email: studentEmail,
-        amount: amount * 100, // Convert Naira to Kobo
+        amount: amount * 100,
       },
       {
         headers: {
@@ -62,7 +66,6 @@ app.post('/api/payment/initialize', async (req, res) => {
 
     const reference = response.data.data.reference;
 
-    // Save transaction
     const transaction = new TokenTransaction({
       studentName,
       studentEmail,
@@ -112,6 +115,11 @@ app.get('/api/payment/verify/:reference', async (req, res) => {
     console.error('Error verifying payment:', error.message);
     res.status(500).json({ error: 'Payment verification failed' });
   }
+});
+
+// Fallback route for frontend (in case of refresh or unknown route)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Start Server
