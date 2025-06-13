@@ -1,128 +1,84 @@
-const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const axios = require('axios');
+require('dotenv').config();
 
 const app = express();
-
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Serve static frontend files
-app.use(express.static(path.join(__dirname, 'public')));
-
 // Environment Variables
 const PORT = process.env.PORT || 5000;
-const MONGO_URL = process.env.MONGO_URL;
+const MONGO_URI = process.env.MONGO_URI;
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
-// MongoDB Model
-const tokenTransactionSchema = new mongoose.Schema({
-  studentName: String,
-  studentEmail: String,
+// MongoDB Schema
+const transactionSchema = new mongoose.Schema({
+  email: String,
   amount: Number,
   reference: String,
-  status: {
-    type: String,
-    enum: ['pending', 'success', 'failed'],
-    default: 'pending',
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+  status: { type: String, default: 'pending' },
+  createdAt: { type: Date, default: Date.now },
 });
 
-const TokenTransaction = mongoose.model('TokenTransaction', tokenTransactionSchema);
+const Transaction = mongoose.model('Transaction', transactionSchema);
 
-// MongoDB Connection
-mongoose.connect(MONGO_URL, {
+// Connect to MongoDB
+mongoose.connect(MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-})
-.then(() => console.log('✅ MongoDB connected'))
-.catch(err => console.error('❌ MongoDB connection error:', err));
+}).then(() => console.log("✅ MongoDB connected"))
+  .catch(err => console.error("❌ MongoDB connection failed:", err));
 
-// Payment Initialization Route
+// Initialize payment
 app.post('/api/payment/initialize', async (req, res) => {
-  const { studentName, studentEmail, amount } = req.body;
+  const { email, amount } = req.body;
 
   try {
-    const response = await axios.post(
-      'https://api.paystack.co/transaction/initialize',
-      {
-        email: studentEmail,
-        amount: amount * 100,
+    const response = await axios.post('https://api.paystack.co/transaction/initialize', {
+      email,
+      amount: amount * 100,
+    }, {
+      headers: {
+        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+        'Content-Type': 'application/json',
       },
-      {
-        headers: {
-          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    const reference = response.data.data.reference;
-
-    const transaction = new TokenTransaction({
-      studentName,
-      studentEmail,
-      amount,
-      reference,
     });
 
-    await transaction.save();
+    const { authorization_url, reference } = response.data.data;
 
-    res.status(200).json({
-      message: 'Payment initialized',
-      authorization_url: response.data.data.authorization_url,
-    });
+    await Transaction.create({ email, amount, reference });
+    res.json({ authorization_url });
   } catch (error) {
-    console.error('Error initializing payment:', error.message);
+    console.error("Init error:", error.message);
     res.status(500).json({ error: 'Payment initialization failed' });
   }
 });
 
-// Payment Verification Route
+// Verify payment
 app.get('/api/payment/verify/:reference', async (req, res) => {
-  const reference = req.params.reference;
+  const { reference } = req.params;
 
   try {
-    const response = await axios.get(
-      `https://api.paystack.co/transaction/verify/${reference}`,
-      {
-        headers: {
-          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-        },
-      }
-    );
+    const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+      headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
+    });
 
     const status = response.data.data.status;
+    const transaction = await Transaction.findOneAndUpdate({ reference }, { status }, { new: true });
 
-    const transaction = await TokenTransaction.findOneAndUpdate(
-      { reference },
-      { status },
-      { new: true }
-    );
-
-    res.status(200).json({
-      message: 'Payment verified',
-      transaction,
-    });
+    res.json({ message: 'Payment verified', status, transaction });
   } catch (error) {
-    console.error('Error verifying payment:', error.message);
+    console.error("Verify error:", error.message);
     res.status(500).json({ error: 'Payment verification failed' });
   }
 });
 
-// Fallback route for frontend (in case of refresh or unknown route)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+app.get('/', (req, res) => {
+  res.send("CBT Token Payment API is running");
 });
 
-// Start Server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
