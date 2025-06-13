@@ -1,79 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Buy CBT Token</title>
-
-    <style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
     body {
-      background-color: #1c1c1c;
-      color: #f0f0f0;
-      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: #121212;
+      color: white;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
     }
-    form {
-      background-color: #2c2c2c;
-      padding: 20px;
+
+    .container {
+      background-color: #1e1e1e;
+      padding: 30px 25px;
       border-radius: 10px;
-      width: 100%;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      width: 90%;
       max-width: 400px;
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
     }
-    input[type="text"], input[type="email"], input[type="file"] {
+
+    .container h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 20px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+
+    .form-group input {
       width: 100%;
       padding: 10px;
-      margin: 8px 0 16px;
+      border-radius: 6px;
       border: none;
-      border-radius: 5px;
+      font-size: 14px;
+      background-color: #2c2c2c;
+      color: white;
     }
-    input[type="submit"] {
+
+    .form-group input:focus {
+      outline: none;
+      box-shadow: 0 0 2px #4CAF50;
+    }
+
+    button {
       width: 100%;
       padding: 12px;
-      background-color: #4caf50;
-      border: none;
+      background-color: #4CAF50;
       color: white;
-      font-weight: bold;
-      border-radius: 5px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
       cursor: pointer;
+      transition: background-color 0.3s;
     }
-    input[type="submit"]:hover {
+
+    button:hover {
       background-color: #45a049;
     }
-    .status {
-      text-align: center;
+
+    .note {
+      font-size: 12px;
+      color: #aaa;
       margin-top: 10px;
-      font-weight: bold;
-      min-height: 1.2em;
+      text-align: center;
     }
-      </style>
+  </style>
 </head>
 <body>
-  <h2>Buy CBT Token</h2>
-  <input type="email" id="email" placeholder="Enter your email" />
-  <input type="number" id="amount" placeholder="Amount (₦)" />
-  <button onclick="pay()">Pay Now</button>
 
+  <div class="container">
+    <h2>Buy Your CBT Token</h2>
+    <div class="form-group">
+      <label for="email">Student Email</label>
+      <input type="email" id="email" placeholder="Enter your email" required />
+    </div>
+    <button onclick="payWithPaystack()">Buy Token (₦2000)</button>
+    <p class="note">Your token will be saved in your browser.</p>
+  </div>
+
+  <script src="https://js.paystack.co/v1/inline.js"></script>
   <script>
-    async function pay() {
-      const email = document.getElementById('email').value;
-      const amount = document.getElementById('amount').value;
+    function payWithPaystack() {
+      const email = document.getElementById("email").value.trim();
+      if (!email) {
+        alert("Please enter your email.");
+        return;
+      }
 
-      const res = await fetch('https://cbt-token-purchase.onrender.com/api/payment/initialize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, amount }),
+      localStorage.setItem("studentEmail", email);
+
+      const handler = PaystackPop.setup({
+        key: 'pk_test_xxxxxxxxxxxxxxxxxxxx', // ✅ Replace with your actual PUBLIC key
+        email: email,
+        amount: 200000, // ₦2000 in Kobo
+        currency: "NGN",
+        ref: "CBT_" + Math.floor(Math.random() * 1000000000 + 1),
+        callback: function(response) {
+          fetch("https://cbt-token-purchase.onrender.com/api/payment/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reference: response.reference, email })
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.token) {
+              localStorage.setItem("myToken", data.token);
+              alert("Token Purchased! Token: " + data.token);
+            } else {
+              alert(data.message || "Verification failed.");
+            }
+          });
+        },
+        onClose: function() {
+          alert("Payment window closed.");
+        }
       });
 
-      const data = await res.json();
-      if (data.authorization_url) {
-        window.location.href = data.authorization_url;
-      } else {
-        alert("Payment initialization failed.");
-      }
+      handler.openIframe();
     }
   </script>
+
 </body>
 </html>
