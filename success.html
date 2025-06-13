@@ -40,39 +40,42 @@
   <div class="container">
     <h2>✅ Payment Successful</h2>
     <p class="message">Fetching your CBT token...</p>
-    <div id="tokenDisplay" class="token"></div>
-  </div>
+    <div class="token-box">
+  <div id="token" class="loading">Loading...</div>
+  <button id="copyBtn" style="display:none; margin-top: 15px; padding: 10px 15px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">Copy Token</button>
+</div>
 
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const reference = urlParams.get('reference');
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const reference = params.get('reference');
 
-    const tokenDisplay = document.getElementById('tokenDisplay');
-    const message = document.querySelector('.message');
+  const tokenDisplay = document.getElementById('token');
+  const copyBtn = document.getElementById('copyBtn');
 
-    if (reference) {
-      fetch(`https://cbt-system.onrender.com/api/payment/verify/${reference}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.transaction && data.transaction.token) {
-            const token = data.transaction.token;
-
-            // Display and save token
-            tokenDisplay.textContent = token;
-            localStorage.setItem('cbtToken', token);
-            message.textContent = "Here is your CBT token. It has also been saved in your browser.";
-          } else {
-            tokenDisplay.textContent = "";
-            message.textContent = "Payment verified, but no token was found. Please contact support.";
-          }
-        })
-        .catch(err => {
-          console.error("Verification error:", err);
-          message.textContent = "Error verifying payment. Please try again later.";
-        });
-    } else {
-      message.textContent = "No payment reference found in URL.";
-    }
-  </script>
+  if (!reference) {
+    tokenDisplay.textContent = "No reference provided.";
+  } else {
+    fetch(`https://cbt-token-purchase.onrender.com/api/payment/verify/${reference}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.token) {
+          tokenDisplay.textContent = data.token;
+          localStorage.setItem("myToken", data.token);
+          copyBtn.style.display = "inline-block";
+          copyBtn.onclick = () => {
+            navigator.clipboard.writeText(data.token).then(() => {
+              copyBtn.textContent = "Copied!";
+              setTimeout(() => copyBtn.textContent = "Copy Token", 2000);
+            });
+          };
+        } else {
+          tokenDisplay.textContent = data.message || "Token not found.";
+        }
+      })
+      .catch(err => {
+        tokenDisplay.textContent = "Error verifying payment.";
+      });
+  }
+</script>
 </body>
 </html>
