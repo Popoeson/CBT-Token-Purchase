@@ -30,11 +30,12 @@ const tokenSchema = new mongoose.Schema({
   studentEmail: String,
   amount: Number,
   reference: String,
+  token: String,
   status: {
     type: String,
     enum: ['pending', 'success', 'failed'],
     default: 'pending',
-  },
+  }
   createdAt: {
     type: Date,
     default: Date.now,
@@ -81,31 +82,44 @@ app.get('/api/payment/verify/:reference', async (req, res) => {
   const { reference } = req.params;
 
   try {
+    // Call Paystack to verify payment
     const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
       headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
     });
 
     const status = response.data.data.status;
 
-    // Update transaction
-    const transaction = await Transaction.findOneAndUpdate({ reference }, { status }, { new: true });
+    // Update transaction status
+    const transaction = await Transaction.findOneAndUpdate(
+      { reference },
+      { status },
+      { new: true }
+    );
+
+    if (!transaction) {
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
 
     if (status === 'success') {
-      // Generate unique token
+      // Generate the unique token
       const tokenCode = 'CBT-' + Math.floor(100000 + Math.random() * 900000);
 
-      // Save to DB
+      // Save token to DB
       const newToken = new Token({
         token: tokenCode,
+        studentEmail: transaction.email,
+        amount: transaction.amount,
         reference: reference,
+        status: 'success',
         createdAt: new Date()
       });
+
       await newToken.save();
 
       return res.json({
         message: 'Payment verified and token issued',
         token: tokenCode,
-        transaction
+        transaction,
       });
     } else {
       return res.status(400).json({ message: 'Payment not successful', status });
