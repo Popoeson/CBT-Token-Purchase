@@ -76,24 +76,6 @@ app.post('/api/payment/initialize', async (req, res) => {
 });
 
 // Verify payment
-app.get('/api/payment/verify/:reference', async (req, res) => {
-  const { reference } = req.params;
-
-  try {
-    const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
-      headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
-    });
-
-    const status = response.data.data.status;
-    const transaction = await Transaction.findOneAndUpdate({ reference }, { status }, { new: true });
-
-    res.json({ message: 'Payment verified', status, transaction });
-  } catch (error) {
-    console.error("Verify error:", error.message);
-    res.status(500).json({ error: 'Payment verification failed' });
-  }
-});
-
 
 app.get('/api/payment/verify/:reference', async (req, res) => {
   const { reference } = req.params;
