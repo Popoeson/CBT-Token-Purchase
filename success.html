@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Payment Success - CBT Token</title>
+  <style>
+    body {
+      background-color: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .container {
+      background-color: #1a1a1a;
+      padding: 30px;
+      border-radius: 10px;
+      max-width: 500px;
+      margin: auto;
+      box-shadow: 0 0 10px #00ff00;
+    }
+
+    .token {
+      color: #00ff00;
+      font-size: 24px;
+      margin-top: 20px;
+      font-weight: bold;
+      word-break: break-word;
+    }
+
+    .message {
+      font-size: 18px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>✅ Payment Successful</h2>
+    <p class="message">Fetching your CBT token...</p>
+    <div id="tokenDisplay" class="token"></div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const reference = urlParams.get('reference');
+
+    const tokenDisplay = document.getElementById('tokenDisplay');
+    const message = document.querySelector('.message');
+
+    if (reference) {
+      fetch(`https://cbt-system.onrender.com/api/payment/verify/${reference}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.transaction && data.transaction.token) {
+            const token = data.transaction.token;
+
+            // Display and save token
+            tokenDisplay.textContent = token;
+            localStorage.setItem('cbtToken', token);
+            message.textContent = "Here is your CBT token. It has also been saved in your browser.";
+          } else {
+            tokenDisplay.textContent = "";
+            message.textContent = "Payment verified, but no token was found. Please contact support.";
+          }
+        })
+        .catch(err => {
+          console.error("Verification error:", err);
+          message.textContent = "Error verifying payment. Please try again later.";
+        });
+    } else {
+      message.textContent = "No payment reference found in URL.";
+    }
+  </script>
+</body>
+</html>
