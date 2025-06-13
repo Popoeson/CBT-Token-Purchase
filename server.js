@@ -24,6 +24,15 @@ const transactionSchema = new mongoose.Schema({
 
 const Transaction = mongoose.model('Transaction', transactionSchema);
 
+// models/Token.js
+const mongoose = require('mongoose');
+const tokenSchema = new mongoose.Schema({
+  token: String,
+  reference: String,
+  createdAt: { type: Date, default: Date.now }
+});
+module.exports = mongoose.model('Token', tokenSchema);
+  
 // Connect to MongoDB
 mongoose.connect(MONGO_URI, {
   useNewUrlParser: true,
