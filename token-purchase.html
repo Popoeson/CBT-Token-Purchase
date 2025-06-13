@@ -1,35 +1,33 @@
-<button onclick="payWithPaystack()">Buy Token (₦2000)</button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Buy CBT Token</title>
+</head>
+<body>
+  <h2>Buy CBT Token</h2>
+  <input type="email" id="email" placeholder="Enter your email" />
+  <input type="number" id="amount" placeholder="Amount (₦)" />
+  <button onclick="pay()">Pay Now</button>
 
-<script src="https://js.paystack.co/v1/inline.js"></script>
-<script>
-  function payWithPaystack() {
-    const studentEmail = localStorage.getItem('studentEmail') || prompt("Enter your email:");
-    
-    var handler = PaystackPop.setup({
-      key: 'pk_test_xxxxxxxxxxxxxxxxxxx', // replace with your public key
-      email: studentEmail,
-      amount: 200000, // Amount in Kobo: ₦2000 = 200000
-      currency: "NGN",
-      ref: 'CBT_' + Math.floor(Math.random() * 1000000000 + 1), // unique ref
-      callback: function(response) {
-        fetch('https://cbt-system.onrender.com/api/payment/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reference: response.reference, email: studentEmail })
-        })
-        .then(res => res.json())
-        .then(data => {
-          alert(data.message);
-          if (data.token) {
-            localStorage.setItem('myToken', data.token);
-          }
-        });
-      },
-      onClose: function() {
-        alert('Transaction was not completed');
+  <script>
+    async function pay() {
+      const email = document.getElementById('email').value;
+      const amount = document.getElementById('amount').value;
+
+      const res = await fetch('https://cbt-token-purchase.onrender.com/api/payment/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, amount }),
+      });
+
+      const data = await res.json();
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
+      } else {
+        alert("Payment initialization failed.");
       }
-    });
-
-    handler.openIframe();
-  }
-</script>
+    }
+  </script>
+</body>
+</html>
