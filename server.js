@@ -77,39 +77,43 @@ app.post('/api/payment/initialize', async (req, res) => {
 });
 
 // Verify payment
-
 app.get('/api/payment/verify/:reference', async (req, res) => {
   const { reference } = req.params;
 
   try {
-    // Call Paystack to verify payment
+    // Verify with Paystack
     const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
       headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
     });
 
     const status = response.data.data.status;
 
-    // Update transaction status
-    const transaction = await Transaction.findOneAndUpdate(
-      { reference },
-      { status },
-      { new: true }
-    );
+    // Update transaction
+    const transaction = await Transaction.findOneAndUpdate({ reference }, { status }, { new: true });
 
     if (!transaction) {
       return res.status(404).json({ message: 'Transaction not found' });
     }
 
     if (status === 'success') {
-      // Generate the unique token
+      // ✅ Check if token already exists for this reference
+      const existingToken = await Token.findOne({ reference });
+      if (existingToken) {
+        return res.json({
+          message: 'Payment already verified, token exists',
+          token: existingToken.token,
+          transaction,
+        });
+      }
+
+      // Generate new token
       const tokenCode = 'CBT-' + Math.floor(100000 + Math.random() * 900000);
 
-      // Save token to DB
       const newToken = new Token({
         token: tokenCode,
         studentEmail: transaction.email,
         amount: transaction.amount,
-        reference: reference,
+        reference,
         status: 'success',
         createdAt: new Date()
       });
