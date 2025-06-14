@@ -35,7 +35,7 @@ const tokenSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'success', 'failed'],
     default: 'pending',
-  }
+  },
   createdAt: {
     type: Date,
     default: Date.now,
