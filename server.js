@@ -149,6 +149,16 @@ app.post('/api/transactions/save', async (req, res) => {
   }
 });
 
+// Get all tokens
+app.get('/api/tokens', async (req, res) => {
+  try {
+    const tokens = await Token.find().sort({ createdAt: -1 });
+    res.json(tokens);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching tokens" });
+  }
+});
+
 app.get('/', (req, res) => {
   res.send("CBT Token Payment API is running");
 });
