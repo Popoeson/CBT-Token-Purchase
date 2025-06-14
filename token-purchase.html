@@ -114,17 +114,31 @@
       ref: "CBT_" + Math.floor(Math.random() * 1000000000 + 1),
       
       callback: function(response) {
-        fetch("https://cbt-token-purchase.onrender.com/api/payment/verify/" + response.reference)
-          .then(res => res.json())
-          .then(data => {
-            if (data.token) {
-              localStorage.setItem("myToken", data.token);
-              window.location.href = "success.html?reference=" + response.reference; // ✅ Redirect to success page
-            } else {
-              alert(data.message || "Verification failed.");
-            }
-          });
-      },
+  const reference = response.reference;
+  const email = localStorage.getItem("studentEmail");
+
+  // First, store the transaction (if not done already)
+  fetch("https://cbt-token-purchase.onrender.com/api/transactions/save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, amount: 2000, reference }),
+  }).then(() => {
+    // Then verify
+    fetch("https://cbt-token-purchase.onrender.com/api/payment/verify/" + reference)
+      .then(res => res.json())
+      .then(data => {
+        if (data.token) {
+          localStorage.setItem("myToken", data.token);
+          window.location.href = "success.html?reference=" + reference;
+        } else {
+          alert(data.message || "Verification failed.");
+        }
+      });
+  });
+}
+
+
+  
 
       onClose: function() {
         alert("Payment window closed.");
@@ -136,5 +150,4 @@
 </script>
 </body>
 </html>
-
 
