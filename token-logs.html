@@ -3,14 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin - Token Transactions</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
+  <title>Token Logs</title>
   <style>
     body {
-      font-family: 'Inter', sans-serif;
       background-color: #121212;
-      color: #fff;
-      margin: 0;
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
       padding: 20px;
     }
 
@@ -19,102 +17,161 @@
       margin-bottom: 20px;
     }
 
+    .search-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"] {
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      width: 300px;
+      background-color: #1e1e1e;
+      color: white;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      background-color: #1e1e1e;
+      margin-top: 10px;
     }
 
     th, td {
-      padding: 12px;
-      border-bottom: 1px solid #333;
+      padding: 10px;
       text-align: left;
+      border-bottom: 1px solid #333;
     }
 
     th {
-      background-color: #2c2c2c;
+      background-color: #1f1f1f;
     }
 
-    tr:hover {
-      background-color: #2a2a2a;
+    .pagination {
+      text-align: center;
+      margin-top: 20px;
     }
 
-    @media(max-width: 768px) {
-      table, thead, tbody, th, td, tr {
-        display: block;
-      }
+    .pagination button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      margin: 0 3px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
 
-      thead tr {
-        display: none;
-      }
+    .pagination button.active {
+      background-color: #2e7d32;
+    }
 
-      td {
-        padding: 10px;
-        border: none;
-        border-bottom: 1px solid #333;
-        position: relative;
-        padding-left: 50%;
-      }
-
-      td::before {
-        content: attr(data-label);
-        position: absolute;
-        left: 15px;
-        font-weight: bold;
-        text-transform: capitalize;
-      }
+    .pagination button:disabled {
+      background-color: #444;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
 
-  <h1>All Token Transactions</h1>
-  <table>
+  <h1>Token Transactions</h1>
+
+  <div class="search-container">
+    <input type="text" id="searchInput" placeholder="Search by reference, token, email, status or date..." onkeyup="filterTokens()">
+  </div>
+
+  <table id="tokenTable">
     <thead>
       <tr>
-        <th>Email</th>
+        <th>#</th>
         <th>Token</th>
+        <th>Email</th>
         <th>Reference</th>
         <th>Status</th>
-        <th>Created At</th>
+        <th>Date</th>
       </tr>
     </thead>
-    <tbody id="tokenTableBody">
-      <tr><td colspan="5">Loading...</td></tr>
+    <tbody id="tableBody">
+      <!-- Token rows will be inserted here -->
     </tbody>
   </table>
 
+  <div class="pagination" id="pagination"></div>
+
   <script>
-    fetch("https://cbt-token-purchase.onrender.com/api/tokens") // ✅ Update to your token API endpoint
-      .then(res => res.json())
-      .then(data => {
-        const tbody = document.getElementById("tokenTableBody");
-        tbody.innerHTML = "";
+    let tokens = [];
+    let currentPage = 1;
+    const rowsPerPage = 10;
 
-        if (data.length === 0) {
-          tbody.innerHTML = "<tr><td colspan='5'>No transactions found.</td></tr>";
-          return;
-        }
+    async function fetchTokens() {
+      try {
+        const response = await fetch("https://cbt-token-purchase.onrender.com/api/tokens");
+        const data = await response.json();
+        tokens = data.reverse(); // newest first
+        renderTable();
+      } catch (err) {
+        alert("Error fetching tokens");
+        console.error(err);
+      }
+    }
 
-        data.forEach(item => {
-          const row = document.createElement("tr");
+    function renderTable() {
+      const tableBody = document.getElementById("tableBody");
+      tableBody.innerHTML = "";
 
-          row.innerHTML = `
-            <td data-label="Email">${item.studentEmail || 'N/A'}</td>
-            <td data-label="Token">${item.token}</td>
-            <td data-label="Reference">${item.reference}</td>
-            <td data-label="Status">${item.status}</td>
-            <td data-label="Created At">${new Date(item.createdAt).toLocaleString()}</td>
-          `;
+      const searchValue = document.getElementById("searchInput").value.toLowerCase();
 
-          tbody.appendChild(row);
-        });
-      })
-      .catch(err => {
-        console.error("Error fetching tokens:", err);
-        document.getElementById("tokenTableBody").innerHTML = "<tr><td colspan='5'>Error loading data.</td></tr>";
+      const filtered = tokens.filter(token =>
+        token.token?.toLowerCase().includes(searchValue) ||
+        token.reference?.toLowerCase().includes(searchValue) ||
+        token.studentEmail?.toLowerCase().includes(searchValue) ||
+        token.status?.toLowerCase().includes(searchValue) ||
+        new Date(token.createdAt).toLocaleString().toLowerCase().includes(searchValue)
+      );
+
+      const start = (currentPage - 1) * rowsPerPage;
+      const paginatedTokens = filtered.slice(start, start + rowsPerPage);
+
+      paginatedTokens.forEach((token, index) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${start + index + 1}</td>
+          <td>${token.token}</td>
+          <td>${token.studentEmail}</td>
+          <td>${token.reference}</td>
+          <td>${token.status}</td>
+          <td>${new Date(token.createdAt).toLocaleString()}</td>
+        `;
+        tableBody.appendChild(row);
       });
+
+      renderPagination(filtered.length);
+    }
+
+    function renderPagination(totalItems) {
+      const totalPages = Math.ceil(totalItems / rowsPerPage);
+      const pagination = document.getElementById("pagination");
+      pagination.innerHTML = "";
+
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement("button");
+        btn.textContent = i;
+        if (i === currentPage) btn.classList.add("active");
+        btn.onclick = () => {
+          currentPage = i;
+          renderTable();
+        };
+        pagination.appendChild(btn);
+      }
+    }
+
+    function filterTokens() {
+      currentPage = 1;
+      renderTable();
+    }
+
+    fetchTokens();
   </script>
 
 </body>
-</html>
+  </html>
