@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - Token Transactions</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #121212;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #1e1e1e;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #333;
+      text-align: left;
+    }
+
+    th {
+      background-color: #2c2c2c;
+    }
+
+    tr:hover {
+      background-color: #2a2a2a;
+    }
+
+    @media(max-width: 768px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+
+      thead tr {
+        display: none;
+      }
+
+      td {
+        padding: 10px;
+        border: none;
+        border-bottom: 1px solid #333;
+        position: relative;
+        padding-left: 50%;
+      }
+
+      td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 15px;
+        font-weight: bold;
+        text-transform: capitalize;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>All Token Transactions</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Email</th>
+        <th>Token</th>
+        <th>Reference</th>
+        <th>Status</th>
+        <th>Created At</th>
+      </tr>
+    </thead>
+    <tbody id="tokenTableBody">
+      <tr><td colspan="5">Loading...</td></tr>
+    </tbody>
+  </table>
+
+  <script>
+    fetch("https://cbt-token-purchase.onrender.com/api/tokens") // ✅ Update to your token API endpoint
+      .then(res => res.json())
+      .then(data => {
+        const tbody = document.getElementById("tokenTableBody");
+        tbody.innerHTML = "";
+
+        if (data.length === 0) {
+          tbody.innerHTML = "<tr><td colspan='5'>No transactions found.</td></tr>";
+          return;
+        }
+
+        data.forEach(item => {
+          const row = document.createElement("tr");
+
+          row.innerHTML = `
+            <td data-label="Email">${item.studentEmail || 'N/A'}</td>
+            <td data-label="Token">${item.token}</td>
+            <td data-label="Reference">${item.reference}</td>
+            <td data-label="Status">${item.status}</td>
+            <td data-label="Created At">${new Date(item.createdAt).toLocaleString()}</td>
+          `;
+
+          tbody.appendChild(row);
+        });
+      })
+      .catch(err => {
+        console.error("Error fetching tokens:", err);
+        document.getElementById("tokenTableBody").innerHTML = "<tr><td colspan='5'>Error loading data.</td></tr>";
+      });
+  </script>
+
+</body>
+</html>
