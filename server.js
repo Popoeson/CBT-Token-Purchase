@@ -159,6 +159,29 @@ app.get('/api/tokens', async (req, res) => {
   }
 });
 
+// Validate token route
+app.get('/api/tokens/validate/:token', async (req, res) => {
+  const { token } = req.params;
+
+  try {
+    const found = await Token.findOne({ token });
+
+    if (!found) {
+      return res.status(404).json({ valid: false, message: "Token not found." });
+    }
+
+    if (found.status !== 'success') {
+      return res.status(400).json({ valid: false, message: "Token is not valid or already used." });
+    }
+
+    // Token is valid and not used
+    return res.json({ valid: true });
+  } catch (err) {
+    console.error("Token validation error:", err.message);
+    res.status(500).json({ valid: false, message: "Server error." });
+  }
+});
+
 app.get('/', (req, res) => {
   res.send("CBT Token Payment API is running");
 });
