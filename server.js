@@ -129,6 +129,21 @@ app.get('/api/payment/verify/:reference', async (req, res) => {
     return res.status(500).json({ error: 'Payment verification failed' });
   }
 });
+// Save Trnsaction
+app.post('/api/transactions/save', async (req, res) => {
+  const { email, amount, reference } = req.body;
+
+  try {
+    const existing = await Transaction.findOne({ reference });
+    if (!existing) {
+      await Transaction.create({ email, amount, reference });
+    }
+    res.json({ message: 'Transaction saved' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to save transaction' });
+  }
+});
 
 app.get('/', (req, res) => {
   res.send("CBT Token Payment API is running");
