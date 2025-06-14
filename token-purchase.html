@@ -105,7 +105,10 @@
     }
 
     localStorage.setItem("studentEmail", email);
-
+    
+     const button = document.querySelector("button");
+      button.disabled = true;
+      button.innerText = "Processing...";
     const handler = PaystackPop.setup({
       key: 'pk_test_72e7641a30dcdbad32a51606354065cc5b62f20f',
       email: email,
