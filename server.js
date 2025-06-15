@@ -182,6 +182,28 @@ app.get('/api/tokens/validate/:token', async (req, res) => {
   }
 });
 
+// Mark token as used
+app.patch('/api/tokens/mark-used/:token', async (req, res) => {
+  const { token } = req.params;
+
+  try {
+    const updated = await Token.findOneAndUpdate(
+      { token },
+      { status: 'used' },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "Token not found" });
+    }
+
+    res.json({ success: true, message: "Token marked as used", token: updated });
+  } catch (err) {
+    console.error("Mark-used error:", err.message);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 app.get('/', (req, res) => {
   res.send("CBT Token Payment API is running");
 });
