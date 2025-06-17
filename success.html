@@ -34,6 +34,20 @@
       font-size: 18px;
       margin-top: 10px;
     }
+
+    button {
+      padding: 10px 15px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
   </style>
 </head>
 <body>
@@ -41,41 +55,50 @@
     <h2>✅ Payment Successful</h2>
     <p class="message">Fetching your CBT token...</p>
     <div class="token-box">
-  <div id="token" class="loading">Loading...</div>
-  <button id="copyBtn" style="display:none; margin-top: 15px; padding: 10px 15px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">Copy Token</button>
-</div>
+      <div id="token" class="loading">Loading...</div>
+      <button id="copyBtn" style="display:none;">Copy Token</button>
+      <button id="proceedBtn" style="display:none;">Proceed to Token Validation</button>
+    </div>
+  </div>
 
-<script>
-  const params = new URLSearchParams(window.location.search);
-  const reference = params.get('reference');
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const reference = params.get('reference');
 
-  const tokenDisplay = document.getElementById('token');
-  const copyBtn = document.getElementById('copyBtn');
+    const tokenDisplay = document.getElementById('token');
+    const copyBtn = document.getElementById('copyBtn');
+    const proceedBtn = document.getElementById('proceedBtn');
 
-  if (!reference) {
-    tokenDisplay.textContent = "No reference provided.";
-  } else {
-    fetch(`https://cbt-token-purchase.onrender.com/api/payment/verify/${reference}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.token) {
-          tokenDisplay.textContent = data.token;
-          localStorage.setItem("myToken", data.token);
-          copyBtn.style.display = "inline-block";
-          copyBtn.onclick = () => {
-            navigator.clipboard.writeText(data.token).then(() => {
-              copyBtn.textContent = "Copied!";
-              setTimeout(() => copyBtn.textContent = "Copy Token", 2000);
-            });
-          };
-        } else {
-          tokenDisplay.textContent = data.message || "Token not found.";
-        }
-      })
-      .catch(err => {
-        tokenDisplay.textContent = "Error verifying payment.";
-      });
-  }
-</script>
+    if (!reference) {
+      tokenDisplay.textContent = "No reference provided.";
+    } else {
+      fetch(`https://cbt-token-purchase.onrender.com/api/payment/verify/${reference}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.token) {
+            tokenDisplay.textContent = data.token;
+            localStorage.setItem("myToken", data.token);
+            copyBtn.style.display = "inline-block";
+            proceedBtn.style.display = "inline-block";
+
+            copyBtn.onclick = () => {
+              navigator.clipboard.writeText(data.token).then(() => {
+                copyBtn.textContent = "Copied!";
+                setTimeout(() => copyBtn.textContent = "Copy Token", 2000);
+              });
+            };
+
+            proceedBtn.onclick = () => {
+              window.location.href = "token-validation.html";
+            };
+          } else {
+            tokenDisplay.textContent = data.message || "Token not found.";
+          }
+        })
+        .catch(err => {
+          tokenDisplay.textContent = "Error verifying payment.";
+        });
+    }
+  </script>
 </body>
 </html>
