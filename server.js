@@ -51,33 +51,6 @@ mongoose.connect(MONGO_URI, {
 }).then(() => console.log("✅ MongoDB connected"))
   .catch(err => console.error("❌ MongoDB connection failed:", err));
 
-// Initialize payment
-app.post('/api/payment/initialize', async (req, res) => {
-  const { email, amount } = req.body;
-
-  try {
-    const response = await axios.post('https://api.paystack.co/transaction/initialize', {
-      email,
-      amount: amount * 100,
-    }, {
-      headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const { authorization_url, reference } = response.data.data;
-
-    await Transaction.create({ email, amount, reference });
-    res.json({ authorization_url });
-  } catch (error) {
-    console.error("Init error:", error.message);
-    res.status(500).json({ error: 'Payment initialization failed' });
-  }
-});
-
-// Verify payment
-
 // Initialize payment with 70% going to subaccount
 app.post('/api/payment/initialize', async (req, res) => {
   const { email, amount } = req.body;
@@ -112,8 +85,24 @@ app.post('/api/payment/initialize', async (req, res) => {
   }
 });
 
+// Verify payment
+app.get('/api/payment/verify/:reference', async (req, res) => {
+  const { reference } = req.params;
+
+  try {
+    // Verify with Paystack
+    const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+      headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
+    });
+
+    const status = response.data.data.status;
+
     // Update transaction
-    const transaction = await Transaction.findOneAndUpdate({ reference }, { status }, { new: true });
+    const transaction = await Transaction.findOneAndUpdate(
+      { reference },
+      { status },
+      { new: true }
+    );
 
     if (!transaction) {
       return res.status(404).json({ message: 'Transaction not found' });
@@ -157,7 +146,8 @@ app.post('/api/payment/initialize', async (req, res) => {
     return res.status(500).json({ error: 'Payment verification failed' });
   }
 });
-// Save Trnsaction
+
+// Save Transaction
 app.post('/api/transactions/save', async (req, res) => {
   const { email, amount, reference } = req.body;
 
