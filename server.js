@@ -77,16 +77,40 @@ app.post('/api/payment/initialize', async (req, res) => {
 });
 
 // Verify payment
-app.get('/api/payment/verify/:reference', async (req, res) => {
-  const { reference } = req.params;
+
+// Initialize payment with 70% going to subaccount
+app.post('/api/payment/initialize', async (req, res) => {
+  const { email, amount } = req.body;
 
   try {
-    // Verify with Paystack
-    const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
-      headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
+    const response = await axios.post('https://api.paystack.co/transaction/initialize', {
+      email,
+      amount: amount * 100, // convert to kobo
+      split: {
+        type: "percentage",
+        subaccounts: [
+          {
+            subaccount: "ACCT_pm10n7jnq0ov8e5", // subaccount code
+            share: 70
+          }
+        ]
+      }
+    }, {
+      headers: {
+        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+        'Content-Type': 'application/json',
+      },
     });
 
-    const status = response.data.data.status;
+    const { authorization_url, reference } = response.data.data;
+
+    await Transaction.create({ email, amount, reference });
+    res.json({ authorization_url });
+  } catch (error) {
+    console.error("Init error:", error.response?.data || error.message);
+    res.status(500).json({ error: 'Payment initialization failed' });
+  }
+});
 
     // Update transaction
     const transaction = await Transaction.findOneAndUpdate({ reference }, { status }, { new: true });
