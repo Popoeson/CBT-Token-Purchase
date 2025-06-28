@@ -4,87 +4,138 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Buy CBT Token</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
+    :root {
+      --bg-color: #f2f2f2;
+      --text-color: #222;
+      --input-bg: #fff;
+      --primary-color: #0074cc;
+      --button-bg: #0074cc;
+      --button-hover: #005fa3;
+      --box-bg: #ffffff;
+      --shadow-color: #0074cc;
+    }
+
+    body.dark {
+      --bg-color: #121212;
+      --text-color: #f0f0f0;
+      --input-bg: #1e1e1e;
+      --primary-color: #00ffcc;
+      --button-bg: #00ffcc;
+      --button-hover: #00e6b8;
+      --box-bg: #1e1e1e;
+      --shadow-color: #00ffcc;
+    }
+
     body {
       margin: 0;
       padding: 0;
       font-family: 'Inter', sans-serif;
-      background-color: #121212;
-      color: white;
+      background-color: var(--bg-color);
+      color: var(--text-color);
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+
+    .toggle button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 5px;
+      background-color: var(--button-bg);
+      color: white;
+      cursor: pointer;
+    }
+
+    .toggle button:hover {
+      background-color: var(--button-hover);
+      color: black;
     }
 
     .container {
-      background-color: #1e1e1e;
+      background-color: var(--box-bg);
       padding: 30px 25px;
       border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      box-shadow: 0 0 15px var(--shadow-color);
       width: 90%;
       max-width: 400px;
     }
 
     .container h2 {
       margin-top: 0;
-      margin-bottom: 20px;
-      font-size: 20px;
+      margin-bottom: 25px;
+      font-size: 22px;
       text-align: center;
+      color: var(--primary-color);
       font-weight: 600;
     }
 
     .form-group {
-      margin-bottom: 15px;
+      margin-bottom: 20px;
     }
 
     .form-group label {
       display: block;
-      margin-bottom: 5px;
+      margin-bottom: 8px;
       font-size: 14px;
     }
 
     .form-group input {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       border-radius: 6px;
-      border: none;
+      border: 1px solid #ccc;
       font-size: 14px;
-      background-color: #2c2c2c;
-      color: white;
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      box-sizing: border-box;
     }
 
     .form-group input:focus {
       outline: none;
-      box-shadow: 0 0 2px #4CAF50;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 4px var(--primary-color);
     }
 
-    button {
+    button.buy-btn {
       width: 100%;
       padding: 12px;
-      background-color: #4CAF50;
+      background-color: var(--button-bg);
       color: white;
       border: none;
       border-radius: 6px;
       font-size: 16px;
       cursor: pointer;
-      transition: background-color 0.3s;
+      transition: background-color 0.3s ease;
     }
 
-    button:hover {
-      background-color: #45a049;
+    button.buy-btn:hover {
+      background-color: var(--button-hover);
+      color: black;
     }
 
     .note {
       font-size: 12px;
       color: #aaa;
-      margin-top: 10px;
+      margin-top: 15px;
       text-align: center;
     }
   </style>
 </head>
 <body>
+
+  <div class="toggle">
+    <button onclick="toggleTheme()">🌓 Toggle Theme</button>
+  </div>
 
   <div class="container">
     <h2>Buy Your CBT Token</h2>
@@ -92,61 +143,72 @@
       <label for="email">Student Email</label>
       <input type="email" id="email" placeholder="Enter your email" required />
     </div>
-    <button onclick="payWithPaystack()">Buy Token (₦500)</button>
-    <p class="note">After a successful payment, please be patient you'd receive your token shortly.</p>
+    <button class="buy-btn" onclick="payWithPaystack()">Buy Token (₦500)</button>
+    <p class="note">After successful payment, please be patient. Your token will be sent shortly.</p>
   </div>
-<script src="https://js.paystack.co/v1/inline.js"></script>
-<script>
-  function payWithPaystack() {
-    const email = document.getElementById("email").value.trim();
-    if (!email) {
-      alert("Please enter your email.");
-      return;
+
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+  <script>
+    function toggleTheme() {
+      document.body.classList.toggle("dark");
+      localStorage.setItem("cbtTheme", document.body.classList.contains("dark") ? "dark" : "light");
     }
 
-    localStorage.setItem("studentEmail", email);
-    
-     const button = document.querySelector("button");
-      button.disabled = true;
-      button.innerText = "Processing...";
-    const handler = PaystackPop.setup({
-      key: 'pk_live_9ea850872c6c1053cbf1530b95c65bdf4535048d',
-      email: email,
-      amount: 50000, // ₦500 in Kobo
-      currency: "NGN",
-      ref: "CBT_" + Math.floor(Math.random() * 1000000000 + 1),
-      
-      callback: function(response) {
-  const reference = response.reference;
-  const email = localStorage.getItem("studentEmail");
-
-  // First, store the transaction (if not done already)
-  fetch("https://cbt-token-purchase.onrender.com/api/transactions/save", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, amount: 500, reference }),
-  }).then(() => {
-    // Then verify
-    fetch("https://cbt-token-purchase.onrender.com/api/payment/verify/" + reference)
-      .then(res => res.json())
-      .then(data => {
-        if (data.token) {
-          localStorage.setItem("myToken", data.token);
-          window.location.href = "success.html?reference=" + reference;
-        } else {
-          alert(data.message || "Verification failed.");
-        }
-      });
-  });
-},
-      onClose: function() {
-        alert("Payment window closed.");
-      }
+    window.addEventListener("DOMContentLoaded", () => {
+      const savedTheme = localStorage.getItem("cbtTheme");
+      if (savedTheme === "dark") document.body.classList.add("dark");
     });
 
-    handler.openIframe();
-  }
-</script>
-</body>
-</html>
+    function payWithPaystack() {
+      const email = document.getElementById("email").value.trim();
+      if (!email) {
+        alert("Please enter your email.");
+        return;
+      }
 
+      localStorage.setItem("studentEmail", email);
+      const button = document.querySelector(".buy-btn");
+      button.disabled = true;
+      button.innerText = "Processing...";
+
+      const handler = PaystackPop.setup({
+        key: 'pk_live_9ea850872c6c1053cbf1530b95c65bdf4535048d',
+        email: email,
+        amount: 50000,
+        currency: "NGN",
+        ref: "CBT_" + Math.floor(Math.random() * 1000000000 + 1),
+
+        callback: function(response) {
+          const reference = response.reference;
+          fetch("https://cbt-token-purchase.onrender.com/api/transactions/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, amount: 500, reference }),
+          }).then(() => {
+            fetch("https://cbt-token-purchase.onrender.com/api/payment/verify/" + reference)
+              .then(res => res.json())
+              .then(data => {
+                if (data.token) {
+                  localStorage.setItem("myToken", data.token);
+                  window.location.href = "success.html?reference=" + reference;
+                } else {
+                  alert(data.message || "Verification failed.");
+                  button.disabled = false;
+                  button.innerText = "Buy Token (₦500)";
+                }
+              });
+          });
+        },
+
+        onClose: function() {
+          alert("Payment window closed.");
+          button.disabled = false;
+          button.innerText = "Buy Token (₦500)";
+        }
+      });
+
+      handler.openIframe();
+    }
+  </script>
+</body>
+  </html>
