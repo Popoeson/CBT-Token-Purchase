@@ -5,21 +5,58 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Token Logs</title>
   <style>
+    :root {
+      --bg-color: #f4f4f4;
+      --text-color: #222;
+      --box-bg: #ffffff;
+      --input-bg: #ffffff;
+      --button-bg: #0074cc;
+      --button-hover: #005fa3;
+      --shadow-color: #0074cc;
+    }
+
+    body.dark {
+      --bg-color: #121212;
+      --text-color: #f0f0f0;
+      --box-bg: #1e1e1e;
+      --input-bg: #2a2a2a;
+      --button-bg: #00ffcc;
+      --button-hover: #00e6b8;
+      --shadow-color: #00ffcc;
+    }
+
     body {
-      background-color: #121212;
-      color: white;
+      background-color: var(--bg-color);
+      color: var(--text-color);
       font-family: 'Segoe UI', sans-serif;
+      margin: 0;
       padding: 20px;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .toggle {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+    }
+
+    .toggle button {
+      padding: 8px 14px;
+      background-color: var(--button-bg);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
     }
 
     h1 {
       text-align: center;
-      margin-bottom: 20px;
+      margin-top: 30px;
     }
 
     .search-container {
       text-align: center;
-      margin-bottom: 20px;
+      margin: 20px auto;
     }
 
     input[type="text"] {
@@ -27,8 +64,24 @@
       border-radius: 6px;
       border: none;
       width: 300px;
-      background-color: #1e1e1e;
-      color: white;
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      font-size: 15px;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      box-shadow: 0 0 5px var(--button-bg);
+    }
+
+    .table-wrapper {
+      background: var(--box-bg);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px var(--shadow-color);
+      margin: 20px auto;
+      max-width: 100%;
+      overflow-x: auto;
     }
 
     table {
@@ -38,13 +91,14 @@
     }
 
     th, td {
-      padding: 10px;
+      padding: 12px 15px;
       text-align: left;
-      border-bottom: 1px solid #333;
+      border-bottom: 1px solid #444;
     }
 
     th {
-      background-color: #1f1f1f;
+      background-color: var(--input-bg);
+      color: var(--text-color);
     }
 
     .pagination {
@@ -53,26 +107,31 @@
     }
 
     .pagination button {
-      background-color: #4CAF50;
+      background-color: var(--button-bg);
       color: white;
       border: none;
       padding: 8px 12px;
       margin: 0 3px;
       border-radius: 4px;
       cursor: pointer;
+      transition: background-color 0.3s;
     }
 
     .pagination button.active {
-      background-color: #2e7d32;
+      background-color: var(--button-hover);
     }
 
     .pagination button:disabled {
-      background-color: #444;
+      background-color: #777;
       cursor: not-allowed;
     }
   </style>
 </head>
 <body>
+
+  <div class="toggle">
+    <button onclick="toggleTheme()">🌓 Toggle Theme</button>
+  </div>
 
   <h1>Token Transactions</h1>
 
@@ -80,21 +139,21 @@
     <input type="text" id="searchInput" placeholder="Search by reference, token, email, status or date..." onkeyup="filterTokens()">
   </div>
 
-  <table id="tokenTable">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Token</th>
-        <th>Email</th>
-        <th>Reference</th>
-        <th>Status</th>
-        <th>Date</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody">
-      <!-- Token rows will be inserted here -->
-    </tbody>
-  </table>
+  <div class="table-wrapper">
+    <table id="tokenTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Token</th>
+          <th>Email</th>
+          <th>Reference</th>
+          <th>Status</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
 
   <div class="pagination" id="pagination"></div>
 
@@ -170,8 +229,17 @@
       renderTable();
     }
 
-    fetchTokens();
+    function toggleTheme() {
+      document.body.classList.toggle("dark");
+      localStorage.setItem("cbtTheme", document.body.classList.contains("dark") ? "dark" : "light");
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const savedTheme = localStorage.getItem("cbtTheme");
+      if (savedTheme === "dark") document.body.classList.add("dark");
+      fetchTokens();
+    });
   </script>
 
 </body>
-  </html>
+    </html>
