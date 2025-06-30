@@ -84,8 +84,9 @@ app.post('/api/split/create', async (req, res) => {
     });
   } catch (error) {
     console.error("Split creation error:", error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to create split group' });
-  }
+return res.status(500).json({
+  error: 'Failed to create split group',
+  details: error.response?.data || error.message
 });
 
 // ✅ Initialize payment (with split_code)
