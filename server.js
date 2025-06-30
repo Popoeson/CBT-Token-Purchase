@@ -62,7 +62,7 @@ app.post('/api/split/create', async (req, res) => {
         currency: 'NGN',
         subaccounts: [
           {
-            subaccount: 'ACCT_pm10n7jnq0ov8e5', // your subaccount
+            subaccount: 'ACCT_pm10n7jnq0ov8e5',
             share: 70
           }
         ],
@@ -84,9 +84,11 @@ app.post('/api/split/create', async (req, res) => {
     });
   } catch (error) {
     console.error("Split creation error:", error.response?.data || error.message);
-return res.status(500).json({
-  error: 'Failed to create split group',
-  details: error.response?.data || error.message
+    return res.status(500).json({
+      error: 'Failed to create split group',
+      details: error.response?.data || error.message
+    });
+  } 
 });
 
 // ✅ Initialize payment (with split_code)
