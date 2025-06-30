@@ -51,23 +51,52 @@ mongoose.connect(MONGO_URI, {
 }).then(() => console.log("✅ MongoDB connected"))
   .catch(err => console.error("❌ MongoDB connection failed:", err));
 
-// Initialize payment with 70% going to subaccount
+// ✅ Route to create a reusable Paystack split code
+app.post('/api/split/create', async (req, res) => {
+  try {
+    const response = await axios.post(
+      'https://api.paystack.co/split',
+      {
+        name: 'CBT Payment Split',
+        type: 'percentage',
+        currency: 'NGN',
+        subaccounts: [
+          {
+            subaccount: 'ACCT_pm10n7jnq0ov8e5', // your subaccount
+            share: 70
+          }
+        ],
+        bearer_type: 'account',
+        bearer_subaccount: 'ACCT_pm10n7jnq0ov8e5'
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    res.json({
+      message: 'Split group created',
+      split_code: response.data.data.split_code,
+      full_data: response.data.data
+    });
+  } catch (error) {
+    console.error("Split creation error:", error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to create split group' });
+  }
+});
+
+// ✅ Initialize payment (with split_code)
 app.post('/api/payment/initialize', async (req, res) => {
   const { email, amount } = req.body;
 
   try {
     const response = await axios.post('https://api.paystack.co/transaction/initialize', {
       email,
-      amount: amount * 100, // convert to kobo
-      split: {
-        type: "percentage",
-        subaccounts: [
-          {
-            subaccount: "ACCT_pm10n7jnq0ov8e5", // subaccount code
-            share: 70
-          }
-        ]
-      }
+      amount: amount * 100,
+      split_code: 'SPL_REPLACE_ME' // 🚨 Replace with your actual split_code
     }, {
       headers: {
         Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
@@ -85,19 +114,17 @@ app.post('/api/payment/initialize', async (req, res) => {
   }
 });
 
-// Verify payment
+// ✅ Verify payment and generate token
 app.get('/api/payment/verify/:reference', async (req, res) => {
   const { reference } = req.params;
 
   try {
-    // Verify with Paystack
     const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
       headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
     });
 
     const status = response.data.data.status;
 
-    // Update transaction
     const transaction = await Transaction.findOneAndUpdate(
       { reference },
       { status },
@@ -109,7 +136,6 @@ app.get('/api/payment/verify/:reference', async (req, res) => {
     }
 
     if (status === 'success') {
-      // ✅ Check if token already exists for this reference
       const existingToken = await Token.findOne({ reference });
       if (existingToken) {
         return res.json({
@@ -119,7 +145,6 @@ app.get('/api/payment/verify/:reference', async (req, res) => {
         });
       }
 
-      // Generate new token
       const tokenCode = 'CBT-' + Math.floor(100000 + Math.random() * 900000);
 
       const newToken = new Token({
@@ -147,7 +172,7 @@ app.get('/api/payment/verify/:reference', async (req, res) => {
   }
 });
 
-// Save Transaction
+// ✅ Save transaction manually
 app.post('/api/transactions/save', async (req, res) => {
   const { email, amount, reference } = req.body;
 
@@ -163,7 +188,7 @@ app.post('/api/transactions/save', async (req, res) => {
   }
 });
 
-// Get all tokens
+// ✅ Get all tokens
 app.get('/api/tokens', async (req, res) => {
   try {
     const tokens = await Token.find().sort({ createdAt: -1 });
@@ -173,7 +198,7 @@ app.get('/api/tokens', async (req, res) => {
   }
 });
 
-// Validate token route
+// ✅ Validate token route
 app.get('/api/tokens/validate/:token', async (req, res) => {
   const { token } = req.params;
 
@@ -188,7 +213,6 @@ app.get('/api/tokens/validate/:token', async (req, res) => {
       return res.status(400).json({ valid: false, message: "Token is not valid or already used." });
     }
 
-    // Token is valid and not used
     return res.json({ valid: true });
   } catch (err) {
     console.error("Token validation error:", err.message);
@@ -196,7 +220,7 @@ app.get('/api/tokens/validate/:token', async (req, res) => {
   }
 });
 
-// Mark token as used
+// ✅ Mark token as used
 app.patch('/api/tokens/mark-used/:token', async (req, res) => {
   const { token } = req.params;
 
