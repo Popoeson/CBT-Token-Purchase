@@ -57,7 +57,7 @@ app.post('/api/split/create', async (req, res) => {
     const response = await axios.post(
       'https://api.paystack.co/split',
       {
-        name: 'CBT Payment Split',
+        name: 'CBT Token Split Group',
         type: 'percentage',
         currency: 'NGN',
         subaccounts: [
@@ -66,8 +66,8 @@ app.post('/api/split/create', async (req, res) => {
             share: 70
           }
         ],
-        bearer_type: 'account',
-        bearer_subaccount: 'ACCT_pm10n7jnq0ov8e5'
+        bearer_type: 'subaccount', // ✅ Subaccount pays Paystack fee
+        bearer_subaccount: 'ACCT_pm10n7jnq0ov8e5' // ✅ Fee is charged to this subaccount
       },
       {
         headers: {
@@ -78,12 +78,12 @@ app.post('/api/split/create', async (req, res) => {
     );
 
     res.json({
-      message: 'Split group created',
+      message: '✅ Split group created successfully',
       split_code: response.data.data.split_code,
       full_data: response.data.data
     });
   } catch (error) {
-    console.error("Split creation error:", error.response?.data || error.message);
+    console.error("❌ Split creation error:", error.response?.data || error.message);
     return res.status(500).json({
       error: 'Failed to create split group',
       details: error.response?.data || error.message
