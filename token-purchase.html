@@ -150,10 +150,9 @@
     </div>
     <p class="note">After successful payment if you are not redirected to the token page, click the "Check My Token" button to retrieve your token.</p>
   </div>
-   
 
-  <script src="https://js.paystack.co/v1/inline.js"></script>
-  <script>
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script>
   function toggleTheme() {
     document.body.classList.toggle("dark");
     localStorage.setItem("cbtTheme", document.body.classList.contains("dark") ? "dark" : "light");
@@ -176,6 +175,7 @@
     button.disabled = true;
     button.innerText = "Processing...";
 
+    // Step 1: Get reference from server
     fetch("https://cbt-token-purchase.onrender.com/api/payment/initialize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -183,32 +183,48 @@
     })
     .then(res => res.json())
     .then(data => {
-      if (data.authorization_url && data.reference) {
-        localStorage.setItem("lastReference", data.reference); // for manual fallback
-        window.location.href = data.authorization_url;
-      } else {
-        alert("Failed to initialize payment.");
-        button.disabled = false;
-        button.innerText = "Buy Token (₦500)";
-      }
+      if (!data.reference) throw new Error("No reference returned");
+
+      const handler = PaystackPop.setup({
+        key: 'pk_live_9ea850872c6c1053cbf1530b95c65bdf4535048d', //  live PUBLIC KEY 
+        email: email,
+        amount: 50000, // in kobo
+        currency: "NGN",
+        ref: data.reference,
+
+        callback: function (response) {
+          const reference = response.reference;
+
+          // Save reference + email to DB (optional) and verify
+          fetch("https://cbt-token-purchase.onrender.com/api/payment/verify/" + reference)
+            .then(res => res.json())
+            .then(data => {
+              if (data.token) {
+                localStorage.setItem("myToken", data.token);
+                window.location.href = "success.html?reference=" + reference;
+              } else {
+                alert(data.message || "Payment verification failed.");
+              }
+            });
+        },
+
+        onClose: function () {
+          alert("Transaction was not completed.");
+          button.disabled = false;
+          button.innerText = "Buy Token (₦500)";
+        }
+      });
+
+      handler.openIframe();
     })
     .catch(err => {
-      console.error("Init error:", err);
-      alert("Something went wrong.");
+      console.error("Init failed:", err);
+      alert("Failed to initialize transaction.");
       button.disabled = false;
       button.innerText = "Buy Token (₦500)";
     });
   }
-
-  // Optional fallback button logic 
-  function checkPaymentStatus() {
-    const reference = localStorage.getItem("lastReference");
-    if (!reference) {
-      alert("No payment record found. Please try again.");
-      return;
-    }
-    window.location.href = "success.html?reference=" + reference;
-  }
-  </script>
+</script>
+  
 </body>
 </html>
