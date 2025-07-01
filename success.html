@@ -1,108 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Payment Success - CBT Token</title>
+  <meta charset="UTF-8">
+  <title>Payment Success</title>
   <style>
-    :root {
-      --bg-color: #f4f4f4;
-      --text-color: #111;
-      --box-bg: #fff;
-      --btn-bg: #007bff;
-      --btn-hover: #0056b3;
-      --shadow-color: #007bff;
-    }
-
-    body.dark {
-      --bg-color: #111;
-      --text-color: #fff;
-      --box-bg: #1a1a1a;
-      --btn-bg: #007bff;
-      --btn-hover: #0056b3;
-      --shadow-color: #007bff;
-    }
-
     body {
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      font-family: 'Segoe UI', sans-serif;
+      font-family: sans-serif;
       text-align: center;
-      padding: 40px 20px;
-      transition: background-color 0.3s, color 0.3s;
+      padding-top: 50px;
+      background-color: #f0f0f0;
+      transition: background 0.3s, color 0.3s;
     }
-
-    .toggle {
-      position: absolute;
-      top: 10px;
-      right: 20px;
+    .dark {
+      background-color: #121212;
+      color: white;
     }
-
-    .toggle button {
-      background: var(--btn-bg);
-      color: #fff;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .container {
-      background-color: var(--box-bg);
-      padding: 30px;
-      border-radius: 12px;
-      max-width: 500px;
-      margin: auto;
-      box-shadow: 0 0 12px var(--shadow-color);
-    }
-
-    h2 {
-      margin-bottom: 15px;
-    }
-
-    .message {
-      font-size: 18px;
-      margin-bottom: 20px;
-    }
-
-    .token {
-      color: var(--btn-bg);
+    #token {
       font-size: 24px;
       font-weight: bold;
       margin: 20px 0;
-      word-break: break-word;
     }
-
     button {
       padding: 10px 20px;
-      margin: 10px 8px 0;
-      background-color: var(--btn-bg);
-      color: white;
-      border: none;
-      border-radius: 6px;
+      font-size: 16px;
+      margin: 5px;
       cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    button:hover {
-      background-color: var(--btn-hover);
     }
   </style>
 </head>
 <body>
+  <h1>🎉 Payment Successful</h1>
+  <p>Your CBT token:</p>
+  <div id="token">Loading...</div>
+  <button id="copyBtn" style="display:none;">Copy Token</button>
+  <button id="proceedBtn" style="display:none;">Proceed</button>
 
-  <div class="toggle">
-    <button onclick="toggleTheme()">🌓 Toggle Theme</button>
-  </div>
-
-  <div class="container">
-    <h2>✅ Payment Successful</h2>
-    <p class="message">Fetching your CBT token...</p>
-
-    <div class="token" id="token">Loading...</div>
-    <button id="copyBtn" style="display:none;">Copy Token</button>
-    <button id="proceedBtn" style="display:none;">Proceed to Token Validation</button>
-  </div>
+  <br><br>
+  <button onclick="toggleTheme()">Toggle Theme</button>
 
   <script>
     const params = new URLSearchParams(window.location.search);
