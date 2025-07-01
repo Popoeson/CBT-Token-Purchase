@@ -91,16 +91,15 @@ app.post('/api/split/create', async (req, res) => {
   } 
 });
 
-// ✅ Initialize payment (with split_code and callback)
+// ✅ Initialize payment for Paystack popup (NO callback_url)
 app.post('/api/payment/initialize', async (req, res) => {
   const { email, amount } = req.body;
 
   try {
     const response = await axios.post('https://api.paystack.co/transaction/initialize', {
       email,
-      amount: amount * 100, // in kobo
-      split_code: 'SPL_Ign6KoMszo',
-      callback_url: 'https://cbt-token-purchase.vercel.app/success.html' // ✅ redirect here after live payment
+      amount: amount * 100,
+      split_code: 'SPL_Ign6KoMszo'
     }, {
       headers: {
         Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
@@ -111,7 +110,7 @@ app.post('/api/payment/initialize', async (req, res) => {
     const { authorization_url, reference } = response.data.data;
 
     await Transaction.create({ email, amount, reference });
-    res.json({ authorization_url, reference }); // also send reference for fallback
+    res.json({ authorization_url, reference });
   } catch (error) {
     console.error("Init error:", error.response?.data || error.message);
     res.status(500).json({ error: 'Payment initialization failed' });
