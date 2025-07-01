@@ -149,66 +149,52 @@
 
   <script src="https://js.paystack.co/v1/inline.js"></script>
   <script>
-    function toggleTheme() {
-      document.body.classList.toggle("dark");
-      localStorage.setItem("cbtTheme", document.body.classList.contains("dark") ? "dark" : "light");
+  function toggleTheme() {
+    document.body.classList.toggle("dark");
+    localStorage.setItem("cbtTheme", document.body.classList.contains("dark") ? "dark" : "light");
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    const savedTheme = localStorage.getItem("cbtTheme");
+    if (savedTheme === "dark") document.body.classList.add("dark");
+  });
+
+  function payWithPaystack() {
+    const email = document.getElementById("email").value.trim();
+    if (!email) {
+      alert("Please enter your email.");
+      return;
     }
 
-    window.addEventListener("DOMContentLoaded", () => {
-      const savedTheme = localStorage.getItem("cbtTheme");
-      if (savedTheme === "dark") document.body.classList.add("dark");
-    });
+    localStorage.setItem("studentEmail", email);
+    const button = document.querySelector(".buy-btn");
+    button.disabled = true;
+    button.innerText = "Processing...";
 
-    function payWithPaystack() {
-      const email = document.getElementById("email").value.trim();
-      if (!email) {
-        alert("Please enter your email.");
-        return;
+    // Step 1: Call backend to initialize payment with split and callback URL
+    fetch("https://cbt-token-purchase.onrender.com/api/payment/initialize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, amount: 500 }),
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.authorization_url) {
+        // Step 2: Redirect user to Paystack hosted payment page
+        window.location.href = data.authorization_url;
+      } else {
+        alert("Failed to initialize payment. Please try again.");
+        button.disabled = false;
+        button.innerText = "Buy Token (₦500)";
       }
-
-      localStorage.setItem("studentEmail", email);
-      const button = document.querySelector(".buy-btn");
-      button.disabled = true;
-      button.innerText = "Processing...";
-
-      const handler = PaystackPop.setup({
-        key: 'pk_live_9ea850872c6c1053cbf1530b95c65bdf4535048d',
-        email: email,
-        amount: 50000,
-        currency: "NGN",
-        ref: "CBT_" + Math.floor(Math.random() * 1000000000 + 1),
-
-        callback: function(response) {
-          const reference = response.reference;
-          fetch("https://cbt-token-purchase.onrender.com/api/transactions/save", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, amount: 500, reference }),
-          }).then(() => {
-            fetch("https://cbt-token-purchase.onrender.com/api/payment/verify/" + reference)
-              .then(res => res.json())
-              .then(data => {
-                if (data.token) {
-                  localStorage.setItem("myToken", data.token);
-                  window.location.href = "success.html?reference=" + reference;
-                } else {
-                  alert(data.message || "Verification failed.");
-                  button.disabled = false;
-                  button.innerText = "Buy Token (₦500)";
-                }
-              });
-          });
-        },
-
-        onClose: function() {
-          alert("Payment window closed.");
-          button.disabled = false;
-          button.innerText = "Buy Token (₦500)";
-        }
-      });
-
-      handler.openIframe();
-    }
+    })
+    .catch(err => {
+      console.error("Init error:", err);
+      alert("Something went wrong.");
+      button.disabled = false;
+      button.innerText = "Buy Token (₦500)";
+    });
+  }
   </script>
 </body>
   </html>
