@@ -91,7 +91,7 @@ app.post('/api/split/create', async (req, res) => {
   } 
 });
 
-// ✅ Initialize payment (with split_code)
+// Initialize Payment 
 app.post('/api/payment/initialize', async (req, res) => {
   const { email, amount } = req.body;
 
@@ -99,8 +99,8 @@ app.post('/api/payment/initialize', async (req, res) => {
     const response = await axios.post('https://api.paystack.co/transaction/initialize', {
       email,
       amount: amount * 100,
-      split_code: 'SPL_Ign6KoMszo', // actual split_code
-      callback_url: 'https://cbt-token-purchase.vercel.app/success.html'
+      split_code: 'SPL_Ign6KoMszo',
+      callback_url: 'https://cbt-token-purchase.vercel.app/success.html'  // ✅ ADD THIS BACK
     }, {
       headers: {
         Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
