@@ -116,6 +116,7 @@
       font-size: 16px;
       cursor: pointer;
       transition: background-color 0.3s ease;
+      margin: 5px
     }
 
     button.buy-btn:hover {
@@ -144,9 +145,12 @@
       <input type="email" id="email" placeholder="Enter your email" required />
     </div>
     <button class="buy-btn" onclick="payWithPaystack()">Buy Token (₦500)</button>
-    <p class="note">After successful payment, please be patient. Your token will be sent shortly.</p>
+    <div>
+        <button class="buy-btn"onclick="checkPaymentStatus()">🔄 Check My Token</button>
+    </div>
+    <p class="note">After successful payment if you are not redirected to the token page, click the "Check My Token" button to retrieve your token.</p>
   </div>
-   <button onclick="checkPaymentStatus()">🔄 Check My Token</button>
+   
 
   <script src="https://js.paystack.co/v1/inline.js"></script>
   <script>
@@ -207,4 +211,4 @@
   }
   </script>
 </body>
-  </html>
+</html>
