@@ -146,6 +146,7 @@
     <button class="buy-btn" onclick="payWithPaystack()">Buy Token (₦500)</button>
     <p class="note">After successful payment, please be patient. Your token will be sent shortly.</p>
   </div>
+   <button onclick="checkPaymentStatus()">🔄 Check My Token</button>
 
   <script src="https://js.paystack.co/v1/inline.js"></script>
   <script>
@@ -166,59 +167,43 @@
       return;
     }
 
+    localStorage.setItem("studentEmail", email);
     const button = document.querySelector(".buy-btn");
     button.disabled = true;
     button.innerText = "Processing...";
 
-    const ref = "CBT_" + Math.floor(Math.random() * 1000000000 + 1);
-    localStorage.setItem("studentEmail", email);
-
-    const handler = PaystackPop.setup({
-      key: 'pk_live_9ea850872c6c1053cbf1530b95c65bdf4535048d', // ✅ public key
-      email: email,
-      amount: 50000, // Amount in kobo (₦500)
-      currency: 'NGN',
-      reference: ref,
-
-      callback: function(response) {
-        const reference = response.reference;
-
-        // Save transaction first
-        fetch("https://cbt-token-purchase.onrender.com/api/transactions/save", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, amount: 500, reference }),
-        })
-        .then(() => {
-          // Then verify transaction and redirect
-          fetch("https://cbt-token-purchase.onrender.com/api/payment/verify/" + reference)
-            .then(res => res.json())
-            .then(data => {
-              if (data.token) {
-                localStorage.setItem("myToken", data.token);
-                window.location.href = "success.html?reference=" + reference;
-              } else {
-                alert(data.message || "Verification failed.");
-                button.disabled = false;
-                button.innerText = "Buy Token (₦500)";
-              }
-            })
-            .catch(() => {
-              alert("Verification error.");
-              button.disabled = false;
-              button.innerText = "Buy Token (₦500)";
-            });
-        });
-      },
-
-      onClose: function() {
-        alert("Payment window closed.");
+    fetch("https://cbt-token-purchase.onrender.com/api/payment/initialize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, amount: 500 }),
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.authorization_url && data.reference) {
+        localStorage.setItem("lastReference", data.reference); // for manual fallback
+        window.location.href = data.authorization_url;
+      } else {
+        alert("Failed to initialize payment.");
         button.disabled = false;
         button.innerText = "Buy Token (₦500)";
       }
+    })
+    .catch(err => {
+      console.error("Init error:", err);
+      alert("Something went wrong.");
+      button.disabled = false;
+      button.innerText = "Buy Token (₦500)";
     });
+  }
 
-    handler.openIframe();
+  // Optional fallback button logic 
+  function checkPaymentStatus() {
+    const reference = localStorage.getItem("lastReference");
+    if (!reference) {
+      alert("No payment record found. Please try again.");
+      return;
+    }
+    window.location.href = "success.html?reference=" + reference;
   }
   </script>
 </body>
