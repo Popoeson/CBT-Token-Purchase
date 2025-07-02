@@ -116,7 +116,7 @@
       font-size: 16px;
       cursor: pointer;
       transition: background-color 0.3s ease;
-      margin: 5px
+      margin: 5px;
     }
 
     button.buy-btn:hover {
@@ -145,10 +145,8 @@
       <input type="email" id="email" placeholder="Enter your email" required />
     </div>
     <button class="buy-btn" onclick="payWithPaystack()">Buy Token (₦500)</button>
-    <div>
-        <button class="buy-btn"onclick="checkPaymentStatus()">🔄 Check My Token</button>
-    </div>
-    <p class="note">After successful payment if you are not redirected to the token page, click the "Check My Token" button to retrieve your token.</p>
+    <button class="buy-btn" onclick="checkPaymentStatus()">🔄 Check My Token</button>
+    <p class="note">If you're not redirected after payment, click "Check My Token" to retrieve your token.</p>
   </div>
 
 <script src="https://js.paystack.co/v1/inline.js"></script>
@@ -175,7 +173,6 @@
     button.disabled = true;
     button.innerText = "Processing...";
 
-    // Step 1: Get reference from server
     fetch("https://cbt-token-purchase.onrender.com/api/payment/initialize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -183,39 +180,49 @@
     })
     .then(res => res.json())
     .then(data => {
-      if (!data.reference) throw new Error("No reference returned");
+      const reference = data.reference;
+      if (!reference) throw new Error("No reference returned");
+      localStorage.setItem("pendingRef", reference);
 
       const handler = PaystackPop.setup({
-        key: 'pk_live_9ea850872c6c1053cbf1530b95c65bdf4535048d', //  live PUBLIC KEY 
-        email: email,
-        amount: 50000, // in kobo
+        key: 'pk_live_9ea850872c6c1053cbf1530b95c65bdf4535048d',
+        email,
+        amount: 50000,
         currency: "NGN",
-        ref: data.reference,
+        ref: reference,
 
         callback: function (response) {
-          const reference = response.reference;
-
-          // Save reference + email to DB (optional) and verify
-          fetch("https://cbt-token-purchase.onrender.com/api/payment/verify/" + reference)
-            .then(res => res.json())
-            .then(data => {
-              if (data.token) {
-                localStorage.setItem("myToken", data.token);
-                window.location.href = "success.html?reference=" + reference;
-              } else {
-                alert(data.message || "Payment verification failed.");
-              }
-            });
+          verifyAndRedirect(reference);
         },
 
         onClose: function () {
-          alert("Transaction was not completed.");
+          alert("Transaction not completed.");
           button.disabled = false;
           button.innerText = "Buy Token (₦500)";
         }
       });
 
       handler.openIframe();
+
+      // ⏱ Poll every 5 seconds for 90 seconds (18 attempts)
+      let count = 0;
+      const interval = setInterval(() => {
+        const ref = localStorage.getItem("pendingRef");
+        if (!ref || count > 18) return clearInterval(interval);
+
+        fetch("https://cbt-token-purchase.onrender.com/api/payment/verify/" + ref)
+          .then(res => res.json())
+          .then(data => {
+            if (data.token) {
+              localStorage.setItem("myToken", data.token);
+              localStorage.removeItem("pendingRef");
+              clearInterval(interval);
+              window.location.href = "success.html?reference=" + ref;
+            }
+          });
+
+        count++;
+      }, 5000); // every 5 seconds
     })
     .catch(err => {
       console.error("Init failed:", err);
@@ -224,7 +231,30 @@
       button.innerText = "Buy Token (₦500)";
     });
   }
+
+  function checkPaymentStatus() {
+    const ref = localStorage.getItem("pendingRef");
+    if (!ref) {
+      alert("No pending transaction reference found.");
+      return;
+    }
+
+    verifyAndRedirect(ref);
+  }
+
+  function verifyAndRedirect(reference) {
+    fetch("https://cbt-token-purchase.onrender.com/api/payment/verify/" + reference)
+      .then(res => res.json())
+      .then(data => {
+        if (data.token) {
+          localStorage.setItem("myToken", data.token);
+          localStorage.removeItem("pendingRef");
+          window.location.href = "success.html?reference=" + reference;
+        } else {
+          alert(data.message || "Token not yet available. Try again later.");
+        }
+      });
+  }
 </script>
-  
 </body>
-</html>
+  </html>
