@@ -145,6 +145,9 @@
       <input type="email" id="email" placeholder="Enter your email" required />
     </div>
     <button class="buy-btn" onclick="payWithPaystack()">Buy Token (₦500)</button>
+    <p id="pollingStatus" style="text-align:center; font-size: 13px; color: var(--primary-color); display: none;">
+  🔄 Checking for your token, please wait...
+    </p>
     <button class="buy-btn" onclick="checkPaymentStatus()">🔄 Check My Token</button>
     <p class="note">If you're not redirected after payment, click "Check My Token" to retrieve your token.</p>
   </div>
@@ -204,26 +207,34 @@
 
       handler.openIframe();
 
-      // ⏱ Poll every 5 seconds for 90 seconds (18 attempts)
-      let count = 0;
-      const interval = setInterval(() => {
-        const ref = localStorage.getItem("pendingRef");
-        if (!ref || count > 18) return clearInterval(interval);
+      // ⏱ Poll every 15 seconds for 3 minutes (12 attempts)
+let count = 0;
+const pollingStatus = document.getElementById("pollingStatus");
+pollingStatus.style.display = "block";
 
-        fetch("https://testpro-mvh8.onrender.com/api/payment/verify/" + ref)
-          .then(res => res.json())
-          .then(data => {
-            if (data.token) {
-              localStorage.setItem("myToken", data.token);
-              localStorage.removeItem("pendingRef");
-              clearInterval(interval);
-              window.location.href = "success.html?reference=" + ref;
-            }
-          });
+const interval = setInterval(() => {
+  const ref = localStorage.getItem("pendingRef");
+  if (!ref || count > 12) {
+    pollingStatus.textContent = "⏱ Token not available yet. You can click 'Check My Token' later.";
+    return clearInterval(interval);
+  }
 
-        count++;
-      }, 5000); // every 5 seconds
-    })
+  fetch("https://testpro-mvh8.onrender.com/api/payment/verify/" + ref)
+    .then(res => res.json())
+    .then(data => {
+      if (data.token) {
+        localStorage.setItem("myToken", data.token);
+        localStorage.removeItem("pendingRef");
+        pollingStatus.textContent = "✅ Token retrieved successfully!";
+        clearInterval(interval);
+        setTimeout(() => {
+          window.location.href = "success.html?reference=" + ref;
+        }, 1000);
+      }
+    });
+
+  count++;
+}, 15000); // every 15 seconds
     .catch(err => {
       console.error("Init failed:", err);
       alert("Failed to initialize transaction.");
