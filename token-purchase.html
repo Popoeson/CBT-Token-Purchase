@@ -173,7 +173,7 @@
     button.disabled = true;
     button.innerText = "Processing...";
 
-    fetch("https://cbt-token-purchase.onrender.com/api/payment/initialize", {
+    fetch("https://testpro-mvh8.onrender.com/api/payment/initialize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, amount: 500 }),
@@ -210,7 +210,7 @@
         const ref = localStorage.getItem("pendingRef");
         if (!ref || count > 18) return clearInterval(interval);
 
-        fetch("https://cbt-token-purchase.onrender.com/api/payment/verify/" + ref)
+        fetch("https://testpro-mvh8.onrender.com/api/payment/verify/" + ref)
           .then(res => res.json())
           .then(data => {
             if (data.token) {
@@ -243,7 +243,7 @@
   }
 
   function verifyAndRedirect(reference) {
-    fetch("https://cbt-token-purchase.onrender.com/api/payment/verify/" + reference)
+    fetch("https://testpro-mvh8.onrender.com/api/payment/verify/" + reference)
       .then(res => res.json())
       .then(data => {
         if (data.token) {
