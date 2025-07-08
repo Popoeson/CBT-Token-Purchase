@@ -116,7 +116,7 @@
       font-size: 16px;
       cursor: pointer;
       transition: background-color 0.3s ease;
-      margin: 5px;
+      margin: 5px 0;
     }
 
     button.buy-btn:hover {
@@ -129,6 +129,13 @@
       color: #aaa;
       margin-top: 15px;
       text-align: center;
+    }
+
+    #pollingStatus {
+      text-align: center;
+      font-size: 13px;
+      color: var(--primary-color);
+      display: none;
     }
   </style>
 </head>
@@ -145,79 +152,134 @@
       <input type="email" id="email" placeholder="Enter your email" required />
     </div>
     <button class="buy-btn" onclick="payWithPaystack()">Buy Token (₦500)</button>
-    <p id="pollingStatus" style="text-align:center; font-size: 13px; color: var(--primary-color); display: none;">
-  🔄 Checking for your token, please wait...
-    </p>
+    <p id="pollingStatus">🔄 Checking for your token, please wait...</p>
     <button class="buy-btn" onclick="checkPaymentStatus()">🔄 Check My Token</button>
     <p class="note">If you're not redirected after payment, click "Check My Token" to retrieve your token.</p>
   </div>
 
-<script src="https://js.paystack.co/v1/inline.js"></script>
-<script>
-  function toggleTheme() {
-    document.body.classList.toggle("dark");
-    localStorage.setItem("cbtTheme", document.body.classList.contains("dark") ? "dark" : "light");
-  }
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+  <script>
+    function toggleTheme() {
+      document.body.classList.toggle("dark");
+      localStorage.setItem("cbtTheme", document.body.classList.contains("dark") ? "dark" : "light");
+    }
 
-  window.addEventListener("DOMContentLoaded", () => {
-    const savedTheme = localStorage.getItem("cbtTheme");
-    if (savedTheme === "dark") document.body.classList.add("dark");
-  });
-
-  function payWithPaystack() {
-  const email = document.getElementById("email").value.trim();
-  if (!email) {
-    alert("Please enter your email.");
-    return;
-  }
-
-  localStorage.setItem("studentEmail", email);
-  const button = document.querySelector(".buy-btn");
-  button.disabled = true;
-  button.innerText = "Processing...";
-
-  fetch("https://testpro-mvh8.onrender.com/api/payment/initialize", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, amount: 500 }),
-  })
-  .then(res => res.json())
-  .then(data => {
-    const reference = data.reference;
-    if (!reference) throw new Error("No reference returned");
-    localStorage.setItem("pendingRef", reference);
-
-    const handler = PaystackPop.setup({
-      key: 'pk_live_9ea850872c6c1053cbf1530b95c65bdf4535048d',
-      email,
-      amount: 50000,
-      currency: "NGN",
-      ref: reference,
-
-      callback: function () {
-        verifyAndRedirect(reference);
-      },
-
-      onClose: function () {
-        alert("Transaction not completed.");
-        button.disabled = false;
-        button.innerText = "Buy Token (₦500)";
-      }
+    window.addEventListener("DOMContentLoaded", () => {
+      const savedTheme = localStorage.getItem("cbtTheme");
+      if (savedTheme === "dark") document.body.classList.add("dark");
     });
 
-    handler.openIframe();
+    function payWithPaystack() {
+      const email = document.getElementById("email").value.trim();
+      if (!email) return alert("Please enter your email.");
 
-    // ⏱ Poll every 60 seconds (1 min), 3 times max
-    let count = 0;
-    const pollingStatus = document.getElementById("pollingStatus");
-    pollingStatus.style.display = "block";
+      localStorage.setItem("studentEmail", email);
+      const button = document.querySelector(".buy-btn");
+      button.disabled = true;
+      button.innerText = "Processing...";
 
-    const interval = setInterval(() => {
+      fetch("https://testpro-mvh8.onrender.com/api/payment/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, amount: 500 }),
+      })
+      .then(res => res.json())
+      .then(data => {
+        const reference = data.reference;
+        if (!reference) throw new Error("No reference returned");
+        localStorage.setItem("pendingRef", reference);
+
+        const handler = PaystackPop.setup({
+          key: 'pk_live_9ea850872c6c1053cbf1530b95c65bdf4535048d',
+          email,
+          amount: 50000,
+          currency: "NGN",
+          ref: reference,
+
+          callback: function () {
+            verifyAndRedirect(reference);
+          },
+
+          onClose: function () {
+            alert("Transaction not completed.");
+            button.disabled = false;
+            button.innerText = "Buy Token (₦500)";
+          }
+        });
+
+        handler.openIframe();
+
+        // Auto-polling every 60 seconds (max 3 tries)
+        let count = 0;
+        const pollingStatus = document.getElementById("pollingStatus");
+        pollingStatus.style.display = "block";
+        pollingStatus.textContent = "🔄 Checking for your token, please wait...";
+
+        const interval = setInterval(() => {
+          const ref = localStorage.getItem("pendingRef");
+          if (!ref || count >= 3) {
+            pollingStatus.textContent = "⏱ Token not available yet. You can click 'Check My Token' later.";
+            clearInterval(interval);
+            return;
+          }
+
+          fetch("https://testpro-mvh8.onrender.com/api/payment/verify/" + ref)
+            .then(res => res.json())
+            .then(data => {
+              if (data.token) {
+                localStorage.setItem("myToken", data.token);
+                localStorage.removeItem("pendingRef");
+                pollingStatus.textContent = "✅ Token retrieved successfully!";
+                clearInterval(interval);
+                setTimeout(() => {
+                  window.location.href = "success.html?reference=" + ref;
+                }, 1000);
+              }
+            });
+
+          count++;
+        }, 60000); // 1 minute interval
+      })
+      .catch(err => {
+        console.error("Init failed:", err);
+        alert("Failed to initialize transaction.");
+        button.disabled = false;
+        button.innerText = "Buy Token (₦500)";
+      });
+    }
+
+    function verifyAndRedirect(reference) {
+      const pollingStatus = document.getElementById("pollingStatus");
+      pollingStatus.style.display = "block";
+      pollingStatus.textContent = "🔄 Verifying payment after checkout...";
+
+      fetch("https://testpro-mvh8.onrender.com/api/payment/verify/" + reference)
+        .then(res => res.json())
+        .then(data => {
+          if (data.token) {
+            localStorage.setItem("myToken", data.token);
+            localStorage.removeItem("pendingRef");
+            pollingStatus.textContent = "✅ Token retrieved successfully!";
+            setTimeout(() => {
+              window.location.href = "success.html?reference=" + reference;
+            }, 1000);
+          } else {
+            pollingStatus.textContent = "❌ Token not found yet. Please try 'Check My Token'.";
+          }
+        })
+        .catch(() => {
+          pollingStatus.textContent = "❌ Could not verify payment. Please try again.";
+        });
+    }
+
+    function checkPaymentStatus() {
       const ref = localStorage.getItem("pendingRef");
-      if (!ref || count >= 3) {
-        pollingStatus.textContent = "⏱ Token not available yet. You can click 'Check My Token' later.";
-        return clearInterval(interval);
-      }
+      const pollingStatus = document.getElementById("pollingStatus");
+
+      if (!ref) return alert("No recent payment reference found.");
+
+      pollingStatus.style.display = "block";
+      pollingStatus.textContent = "🔄 Checking your token...";
 
       fetch("https://testpro-mvh8.onrender.com/api/payment/verify/" + ref)
         .then(res => res.json())
@@ -226,25 +288,17 @@
             localStorage.setItem("myToken", data.token);
             localStorage.removeItem("pendingRef");
             pollingStatus.textContent = "✅ Token retrieved successfully!";
-            clearInterval(interval);
             setTimeout(() => {
               window.location.href = "success.html?reference=" + ref;
             }, 1000);
+          } else {
+            pollingStatus.textContent = "❌ Token not found yet. Please try again later.";
           }
+        })
+        .catch(() => {
+          pollingStatus.textContent = "❌ Could not verify payment. Try again.";
         });
-
-      count++;
-    }, 60000); // every 60 seconds
-  })
-  .catch(err => {
-    console.error("Init failed:", err);
-    alert("Failed to initialize transaction.");
-    button.disabled = false;
-    button.innerText = "Buy Token (₦500)";
-  });
-  }
-</script>
+    }
+  </script>
 </body>
   </html>
-
-
