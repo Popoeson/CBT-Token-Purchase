@@ -151,7 +151,7 @@
       <label for="email">Student Email</label>
       <input type="email" id="email" placeholder="Enter your email" required />
     </div>
-    <button class="buy-btn" onclick="payWithPaystack()">Buy Token (₦300)</button>
+    <button class="buy-btn" onclick="payWithPaystack()">Buy Token (₦1000)</button>
     <p id="pollingStatus">🔄 Checking for your token, please wait...</p>
     <button class="buy-btn" onclick="checkPaymentStatus()">🔄 Check My Token</button>
     <p class="note">If you're not redirected after payment, click "Check My Token" to retrieve your token.</p>
@@ -192,7 +192,7 @@
         const handler = PaystackPop.setup({
           key: 'pk_live_9ea850872c6c1053cbf1530b95c65bdf4535048d',
           email,
-          amount: 30000,
+          amount: 100000,
           currency: "NGN",
           ref: reference,
 
@@ -244,7 +244,7 @@
         console.error("Init failed:", err);
         alert("Failed to initialize transaction.");
         button.disabled = false;
-        button.innerText = "Buy Token (₦300)";
+        button.innerText = "Buy Token (₦1000)";
       });
     }
 
