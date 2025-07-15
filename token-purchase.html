@@ -181,7 +181,7 @@
       fetch("https://testpro-mvh8.onrender.com/api/payment/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, amount: 300 }),
+        body: JSON.stringify({ email, amount: 1000 }),
       })
       .then(res => res.json())
       .then(data => {
