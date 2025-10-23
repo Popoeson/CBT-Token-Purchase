@@ -127,7 +127,7 @@
       document.getElementById("spinner").remove();
       tokenDisplay.textContent = "No reference provided.";
     } else {
-      fetch(`https://testpro-mvh8.onrender.com/api/payment/verify/${reference}`)
+      fetch(`https://testpro-lpeo.onrender.com/api/payment/verify/${reference}`)
         .then(res => res.json())
         .then(data => {
           document.getElementById("spinner").remove();
